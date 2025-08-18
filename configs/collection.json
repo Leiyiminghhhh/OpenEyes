@@ -1,0 +1,34 @@
+{
+    "collectors": [
+        {
+            "class_name":"SimpleCollector",
+            "source": "NewYorkTimes",
+            "type": "时政",
+            "url": "https://cn.nytimes.com/",
+            "interval": 1
+        },
+        {
+            "class_name":"SimpleCollector",
+            "source": "juejin_articles",
+            "type": "开发",
+            "url": "https://juejin.cn/hot/articles",
+            "interval": 3
+        },
+        {
+            "class_name":"SimpleCollector",
+            "source": "leiphone_transportation",
+            "type": "自动驾驶",
+            "url": "https://www.leiphone.com/category/transportation",
+            "interval": 3
+        }
+    ],
+    "processors": [],
+    "storage": {
+        "host": "localhost",
+        "port": 3306,
+        "username": "root",
+        "password": "lym123",
+        "database": "open_eyes_test"
+    },
+    "mode":"prod"
+}

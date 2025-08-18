@@ -1,0 +1,20 @@
+{
+    "collectors": [
+        {
+            "class_name":"SimpleCollector",
+            "source": "leiphone_transportation",
+            "type": "自动驾驶",
+            "url": "https://www.leiphone.com/category/transportation",
+            "interval": "3"
+        }
+    ],
+    "processors": [],
+    "storage": {
+        "host": "localhost",
+        "port": 3306,
+        "username": "root",
+        "password": "lym123",
+        "database": "open_eyes_test"
+    },
+    "mode":"test"
+}

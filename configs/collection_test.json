@@ -1,0 +1,19 @@
+{
+    "collectors": [
+        {
+            "class_name":"SimpleCollector",
+            "source": "NewYorkTimes",
+            "type": "news",
+            "url": "https://cn.nytimes.com/"
+        }
+    ],
+    "processors": [],
+    "storage": {
+        "host": "localhost",
+        "port": 3306,
+        "username": "root",
+        "password": "lym123",
+        "database": "open_eyes_test"
+    },
+    "mode":"test"
+}

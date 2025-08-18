@@ -1,2 +1,6 @@
 .pyenv
 chromedriver-win64/
+logs/
+test/
+config.json
+__pycache__/
