@@ -2,10 +2,10 @@
     "collectors": [
         {
             "class_name":"SimpleCollector",
-            "source": "leiphone_transportation",
-            "type": "自动驾驶",
-            "url": "https://www.leiphone.com/category/transportation",
-            "interval": "3"
+            "source": "NewYorkTimes",
+            "type": "news",
+            "url": "https://cn.nytimes.com/",
+            "interval": "1"
         }
     ],
     "processors": [],

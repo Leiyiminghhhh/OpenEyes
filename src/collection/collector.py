@@ -1,5 +1,6 @@
 import datetime
 import time
+import json
 
 from util.logger import get_logger
 from util.store_util import Record
@@ -66,6 +67,7 @@ class SimpleCollector(Collector):
                 if self.is_useful(href, effective_title) and href not in self.data:
                     if self.mode == TEST_MODE and idx > 5:
                         break
+                    self.logger.info("收集URL: %s" % href)
                     idx += 1
                     self.data[href] = Record(
                         time=datetime.datetime.now(),
@@ -77,8 +79,7 @@ class SimpleCollector(Collector):
                         url=href)
 
             self.logger.info("成功收集到 %d 个URL" % len(self.data))
-            for i, key in enumerate(self.data):
-                self.logger.info("%d: %s" % (i, self.data[key]))
+            self.logger.info("信息json输出如下: \n%s" % json.dumps({k: v.to_dict() for k, v in self.data.items()}, ensure_ascii=False, indent=2))
             driver.quit()
         except Exception as e:
             self.logger.error("使用Selenium收集URL时出错: %s" % str(e))

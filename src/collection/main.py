@@ -56,8 +56,12 @@ class CollectionImpl(object):
                 collecter = future_to_collector[future]
                 try:
                     result = future.result()
-                    reports[collecter.source] = result
-                    logger.info(f"收集器 {collecter.source} 完成任务")
+                    collect_cnt, success_cnt = result
+                    reports[collecter.source] = {
+                        "total": collect_cnt,
+                        "success": success_cnt
+                    }
+                    logger.info(f"收集器 {collecter.source} 完成任务，共收集 {collect_cnt} 条数据，成功存储 {success_cnt} 条")
                 except Exception as e:
                     logger.error(f"收集器 {collecter.source} 执行出错: {str(e)}")
 
@@ -69,19 +73,11 @@ class CollectionImpl(object):
         """
         data = collecter.Collect()
         collect_cnt = len(data)
-        store_cnt = self._store(data)
-        return collect_cnt, store_cnt
-
-    def _store(self, data: dict):
-        """
-        存储数据
-        """
-        count = 0
-        # data是字典类型，键是URL，值是Record对象
-        for url, record in data.items():
-            if self.store_util.save_record(record):
-                count += 1
-        return count
+        # 获取data的所有值（Record对象）
+        records = list(data.values())
+        result = self.store_util.save_records(records)
+        success_cnt = result["success"]
+        return collect_cnt, success_cnt
 
     def init(self, config_file):
         """

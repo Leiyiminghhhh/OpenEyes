@@ -1,3 +1,4 @@
+import json
 from util.logger import get_logger
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -31,7 +32,7 @@ class Record(Base):
     def to_dict(self):
         return {
             'id': self.id,
-            'time': self.time,
+            'time': self.time.strftime('%Y-%m-%d %H:%M:%S') if self.time else None,
             'title': self.title,
             'source': self.source,
             'content': self.content,
@@ -94,6 +95,53 @@ class StoreUtil:
             logger.info(f"  Username: {self.config.get('username', 'root')}")
         else:
             logger.info("Store Config: 未配置")
+
+    def save_records(self, records: list):
+        """
+        批量保存记录到数据库
+
+        Args:
+            records (list): 记录对象列表
+
+        Returns:
+            dict: 包含成功和失败数量的统计信息
+        """
+        if not self.Session:
+            logger.error("数据库未初始化")
+            return {"success": 0, "failed": len(records)}
+
+        if not isinstance(records, list):
+            logger.error("参数必须是记录对象列表")
+            return {"success": 0, "failed": 0}
+
+        # 过滤掉已存在的记录
+        filtered_records = []
+        fail_store_records = []
+        for record in records:
+            if self.judge_record_contains(record):
+                fail_store_records.append(record)
+            else:
+                filtered_records.append(record)
+
+        if not filtered_records:
+            logger.info("没有需要保存的新记录")
+            return {"success": 0, "failed": len(records)}
+
+        try:
+            session = self.Session()
+            session.add_all(filtered_records)
+            session.commit()
+            success_count = len(filtered_records)
+            logger.info("成功批量保存 %d 条记录 \n %s" % (success_count, json.dumps({k: v.to_dict() for k, v in filtered_records.items()}, ensure_ascii=False, indent=2)))
+            failed_count = len(fail_store_records)
+            logger.info("无需保存 %d 条记录 \n %s" % (failed_count, json.dumps([v.to_dict() for v in fail_store_records], ensure_ascii=False, indent=2)))
+            session.close()
+            return {"success": success_count, "failed": failed_count}
+        except Exception as e:
+            logger.error(f"批量保存记录失败: {str(e)}")
+            session.rollback()
+            session.close()
+            return {"success": 0, "failed": len(records)}
 
     def save_record(self, record: Record):
         """
