@@ -1,9 +1,6 @@
 import logging
 import os
-
-# 创建logs目录（如果不存在）
-log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'logs')
-os.makedirs(log_dir, exist_ok=True)
+from datetime import datetime
 
 # 存储已创建的logger实例
 _loggers = {}
@@ -28,6 +25,11 @@ def get_logger(filename='app.log'):
     
     # 避免重复添加处理器
     if not logger.handlers:
+        # 创建带日期的目录结构
+        today = datetime.now().strftime('%Y-%m-%d')
+        log_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'logs', today)
+        os.makedirs(log_dir, exist_ok=True)
+        
         # 创建文件处理器
         log_file_path = os.path.join(log_dir, filename)
         if os.path.exists(log_file_path):

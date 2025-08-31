@@ -2,118 +2,93 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-import time
-import argparse
-import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-
-from util.store_util import StoreUtil
+from collection.crawler_record import RecordCrawler, RecordCrawlerConfig
+from collection.crawler_main_page import MainPageCrawler, MainPageCrawlerConfig
+from datetime import datetime
+from util.store_util import Record, StoreUtil
 from util.logger import get_logger
-from collection.collector import *
+import asyncio
+import json
+import argparse
+import time
+
 
 
 logger = get_logger("collection.log")
 
 
 class CollectionImpl(object):
+    store_util = None
+    crawler_configs = []
+
     def __init__(self, config_file_path=None):
-        self.config_file_path = config_file_path
-        self.date = time.strftime("%Y-%m-%d", time.localtime())
-        self.collectors = []
-        self.config = {}
-        self.store_config = {}
-        self.mode = "test"
-
-        self.init(config_file_path)
-        self.report_path = ""
-        self.store_util = StoreUtil(self.store_config)
-
-    def PrintConfig(self):
         logger.info(
             "--------------------------- 配置信息 --------------------------")
-        logger.info("日期：%s" % self.date)
-        logger.info("配置文件：%s" % self.config_file_path)
-        logger.info("收集目标：")
-        for collecter in self.collectors:
-            logger.info("%s: %s", collecter.__class__.__name__, collecter)
-        # logger.info("---------------------------- 存储配置 --------------------------")
-        # logger.info(self.store_util)
+        logger.info("日期：%s" % time.strftime("%Y-%m-%d", time.localtime()))
+        logger.info("配置文件：%s" % config_file_path)
+        self.config = None
+        with open(config_file_path, 'r', encoding='utf-8') as f:
+            config_str = f.read()
+            self.config = json.loads(config_str)
+            logger.info("文件内容：\n%s" % config_str)
+
+        self.store_util = StoreUtil(self.config.get("storage"))
         self.store_util.PrintStoreConfig()
+        for idx, crawl_config in enumerate(self.config.get("crawls")):
+            logger.info("%d crawl：%s" % (idx, crawl_config))
+            main_page_config = MainPageCrawlerConfig(**crawl_config)
+            self.crawler_configs.append(main_page_config)
 
     def Run(self):
-        reports = {}
-        # 使用线程池，最多同时运行5个线程
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # 提交所有任务到线程池
-            future_to_collector = {
-                executor.submit(self._run_collector, collecter): collecter
-                for collecter in self.collectors
-            }
-
-            # 等待任务完成并收集结果
-            for future in as_completed(future_to_collector):
-                collecter = future_to_collector[future]
-                try:
-                    result = future.result()
-                    collect_cnt, success_cnt = result
-                    reports[collecter.source] = {
-                        "total": collect_cnt,
-                        "success": success_cnt
-                    }
-                    logger.info(f"收集器 {collecter.source} 完成任务，共收集 {collect_cnt} 条数据，成功存储 {success_cnt} 条")
-                except Exception as e:
-                    logger.error(f"收集器 {collecter.source} 执行出错: {str(e)}")
-
-        return reports
-
-    def _run_collector(self, collecter):
-        """
-        运行单个收集器的任务
-        """
-        data = collecter.Collect()
-        collect_cnt = len(data)
-        # 获取data的所有值（Record对象）
-        records = list(data.values())
-        result = self.store_util.save_records(records)
-        success_cnt = result["success"]
-        return collect_cnt, success_cnt
-
-    def init(self, config_file):
-        """
-        读取配置文件，根据collectors的名称创建collector对象
-        """
-        if not config_file or not os.path.exists(config_file):
-            logger.warning("配置文件不存在: %s" % config_file)
-        try:
-            with open(config_file, 'r', encoding='utf-8') as f:
-                self.config = json.load(f)
-        except Exception as e:
-            logger.error("读取配置文件失败: %s" % str(e))
-
-        self.mode = self.config.get('mode', 'simple')
-        collectors = self.config.get('collectors', [])
-
-        for collector in collectors:
+        for main_page_config in self.crawler_configs:
             try:
-                interval = int(collector.get('interval', 1))
-                dayinyear = datetime.datetime.now().timetuple().tm_yday
-                if dayinyear % interval != 0: 
-                    logger.info("跳过 %s(%d, %d)" % (collector.get('source'), dayinyear, interval))
-                    continue
-                name = collector.get('class_name')
-                collector["mode"] = self.mode
-                if name in globals():
-                    collector_class = globals()[name]
-                    collector_instance = collector_class(collector)
-                    self.collectors.append(collector_instance)
-                else:
-                    logger.warning("未找到collector类: %s" % name)
-            except Exception as e:
-                source = collector.get("source")
-                logger.error("创建collector失败: %s, 错误: %s" % (source, str(e)))
+                # 主页
+                logger.info("------ 从主页获取URL ------")
+                logger.info(main_page_config)
+                main_page_crawler = MainPageCrawler(main_page_config)
+                result = json.loads(asyncio.run(main_page_crawler.Run()))
+                logger.info(f">>>>>>>>>>>>>>>>>>> 主页收集到 {len(result)} 个页面：")
+                for item in result:
+                    logger.info("{%s -> %s}" %
+                                (item.get("title"), item.get("url")))
 
-        self.store_config = self.config.get('storage', {})
+                # 文章
+                logger.info("------ 从URL获取文章 ------")
+                urls = [item.get("url") for item in result]
+                crawler_config = RecordCrawlerConfig(urls[:5])
+                record_crawler = RecordCrawler(crawler_config)
+                result = asyncio.run(record_crawler.Run())
+                logger.info(
+                    f">>>>>>>>>>>>>>>>>>> 收集到 {len(result)} 篇文章：\n {result}")
+
+                self.__convert_and_store(result, main_page_config)
+            except Exception as e:
+                logger.error("主程序运行异常：%s" % str(e))
+                continue
+
+    def __convert_and_store(self, results, config):
+        logger.info("------ 转换存储数据 ------")
+        store_list = []
+        for url in results:
+            item = results[url]
+            try:
+                data = json.loads(item)[0]
+                article_time =  datetime.strptime(data.get("time"), "%Y-%m-%d")
+                record = Record(
+                    content=data.get("content"), 
+                    tags=data.get("tags"), 
+                    time=article_time, 
+                    title=data.get("title"), 
+                    type=config.type, 
+                    source=config.source,
+                    url=url)
+                store_list.append(record)
+            except Exception as e:
+                logger.error("转换数据失败：%s %s" % (str(e), item))
+                continue
+        ans = self.store_util.save_records(store_list)
+        logger.info("存储 %d 条数据成功, %d 条失败" %
+                    (ans.get("success"), ans.get("failed")))
 
 
 def parse_args():
@@ -121,8 +96,6 @@ def parse_args():
     parser.add_argument('--config', '-c', help='配置文件路径')
     return parser.parse_args()
 
-def report(reports):
-    return
 
 def main():
     args = parse_args()
@@ -130,19 +103,10 @@ def main():
     logger.info(
         "================================ 初始化 ================================")
     impl = CollectionImpl(args.config)
-    impl.PrintConfig()
 
     logger.info(
         "================================ 开始收集 ================================")
-
-    reports = impl.Run()
-
-    logger.info(
-        "================================ 收集完成，汇总结果 ================================")
-
-    for key in reports:
-        logger.info("%s: %s" % (key, reports[key]))
-    report(reports)
+    impl.Run()
 
     logger.info(
         "================================ 完成任务，爬虫结束 ================================")

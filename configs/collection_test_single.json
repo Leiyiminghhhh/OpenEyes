@@ -1,14 +1,16 @@
 {
-    "collectors": [
+    "crawls": [
         {
-            "class_name":"SimpleCollector",
             "source": "NewYorkTimes",
-            "type": "news",
-            "url": "https://cn.nytimes.com/",
-            "interval": "1"
+            "type": "时政",
+            "url": "https://cn.nytimes.com/"
+        },
+        {
+            "source": "掘金",
+            "type": "开发",
+            "url": "https://juejin.cn/hot/articles"
         }
     ],
-    "processors": [],
     "storage": {
         "host": "localhost",
         "port": 3306,

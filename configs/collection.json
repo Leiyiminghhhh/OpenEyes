@@ -5,21 +5,28 @@
             "source": "NewYorkTimes",
             "type": "时政",
             "url": "https://cn.nytimes.com/",
-            "interval": 1
+            "interval": 3
         },
         {
             "class_name":"SimpleCollector",
-            "source": "juejin_articles",
+            "source": "掘金",
             "type": "开发",
             "url": "https://juejin.cn/hot/articles",
-            "interval": 3
+            "interval": 7
         },
         {
             "class_name":"SimpleCollector",
-            "source": "leiphone_transportation",
+            "source": "雷锋-自动驾驶",
             "type": "自动驾驶",
             "url": "https://www.leiphone.com/category/transportation",
-            "interval": 3
+            "interval": 7
+        },
+        {
+            "class_name":"SimpleCollector",
+            "source": "BBC",
+            "type": "news",
+            "url": "https://www.bbc.com/",
+            "interval": "3"
         }
     ],
     "processors": [],

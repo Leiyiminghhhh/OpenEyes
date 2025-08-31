@@ -132,7 +132,7 @@ class StoreUtil:
             session.add_all(filtered_records)
             session.commit()
             success_count = len(filtered_records)
-            logger.info("成功批量保存 %d 条记录 \n %s" % (success_count, json.dumps({k: v.to_dict() for k, v in filtered_records.items()}, ensure_ascii=False, indent=2)))
+            logger.info("成功批量保存 %d 条记录 \n %s" % (success_count, json.dumps([v.to_dict() for v in filtered_records], ensure_ascii=False, indent=2)))
             failed_count = len(fail_store_records)
             logger.info("无需保存 %d 条记录 \n %s" % (failed_count, json.dumps([v.to_dict() for v in fail_store_records], ensure_ascii=False, indent=2)))
             session.close()
