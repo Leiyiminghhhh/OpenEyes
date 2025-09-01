@@ -12,7 +12,8 @@ import json
 import argparse
 import time
 
-
+RETRY_TIMES = 3
+MAX_URL_NUM = 50
 
 logger = get_logger("collection.log")
 
@@ -40,31 +41,50 @@ class CollectionImpl(object):
             self.crawler_configs.append(main_page_config)
 
     def Run(self):
+        url_status = {}
         for main_page_config in self.crawler_configs:
-            try:
-                # 主页
-                logger.info("------ 从主页获取URL ------")
-                logger.info(main_page_config)
-                main_page_crawler = MainPageCrawler(main_page_config)
-                result = json.loads(asyncio.run(main_page_crawler.Run()))
-                logger.info(f">>>>>>>>>>>>>>>>>>> 主页收集到 {len(result)} 个页面：")
-                for item in result:
-                    logger.info("{%s -> %s}" %
-                                (item.get("title"), item.get("url")))
+            for idx in range(RETRY_TIMES):
+                try:
+                    # 主页
+                    logger.info(f"------ 从主页获取URL({idx}) ------")
+                    logger.info(main_page_config)
+                    main_page_crawler = MainPageCrawler(main_page_config)
+                    result = json.loads(asyncio.run(main_page_crawler.Run()))
+                    logger.info(f">>>>>>>>>>>>>>>>>>> 主页收集到 {len(result)} 个页面：")
+                    for item in result:
+                        logger.info("{%s -> %s}" %
+                                    (item.get("title"), item.get("url")))
 
-                # 文章
-                logger.info("------ 从URL获取文章 ------")
-                urls = [item.get("url") for item in result]
-                crawler_config = RecordCrawlerConfig(urls[:5])
-                record_crawler = RecordCrawler(crawler_config)
-                result = asyncio.run(record_crawler.Run())
-                logger.info(
-                    f">>>>>>>>>>>>>>>>>>> 收集到 {len(result)} 篇文章：\n {result}")
+                    # 文章
+                    logger.info("------ 从URL获取文章 ------")
+                    urls = self.__filter_urls(result)
+                    urls = set([item.get("url") for item in result])
+                    logger.info(f">>>>>>>>>>>>>>>>>>> 获取 {len(urls)} 个URL")
 
-                self.__convert_and_store(result, main_page_config)
-            except Exception as e:
-                logger.error("主程序运行异常：%s" % str(e))
-                continue
+                    crawler_config = RecordCrawlerConfig(urls)
+                    record_crawler = RecordCrawler(crawler_config)
+                    result = asyncio.run(record_crawler.Run())
+                    logger.info(
+                        f">>>>>>>>>>>>>>>>>>> 收集到 {len(result)} 篇文章：\n {result}")
+
+                    self.__convert_and_store(result, main_page_config)
+                    url_status[main_page_config.source] = True
+                except Exception as e:
+                    logger.error("主程序运行异常：%s" % str(e))
+                    continue
+            if main_page_config.source not in url_status:
+                url_status[main_page_config.source] = False
+
+        return url_status
+
+    def __filter_urls(self, result):
+        urls = []
+        for item in result:
+            url = item.get("url")
+            if url not in urls:
+                if not self.store_util.judge_record_contains(url):
+                    urls.append(url)
+        return urls
 
     def __convert_and_store(self, results, config):
         logger.info("------ 转换存储数据 ------")
@@ -84,10 +104,10 @@ class CollectionImpl(object):
                     url=url)
                 store_list.append(record)
             except Exception as e:
-                logger.error("转换数据失败：%s %s" % (str(e), item))
+                logger.error("转换数据失败：%s %s" % (str(e), url))
                 continue
         ans = self.store_util.save_records(store_list)
-        logger.info("存储 %d 条数据成功, %d 条失败" %
+        logger.info(">>>>>>>>>>>>>>>>>>> 存储 %d 条数据成功, %d 条失败" %
                     (ans.get("success"), ans.get("failed")))
 
 
@@ -106,7 +126,13 @@ def main():
 
     logger.info(
         "================================ 开始收集 ================================")
-    impl.Run()
+    url_status = impl.Run()
+
+    for source, status in url_status.items():
+        if status:
+            logger.info("%s\t✅" % source)
+        else:
+            logger.info("%s\t❌" % source)
 
     logger.info(
         "================================ 完成任务，爬虫结束 ================================")

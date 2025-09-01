@@ -1,14 +1,9 @@
 {
     "crawls": [
         {
-            "source": "NewYorkTimes",
-            "type": "时政",
-            "url": "https://cn.nytimes.com/"
-        },
-        {
-            "source": "掘金",
-            "type": "开发",
-            "url": "https://juejin.cn/hot/articles"
+            "source": "Nvidia News",
+            "type": "科技",
+            "url": "https://www.nvidia.cn/newsroom/news/"
         }
     ],
     "storage": {

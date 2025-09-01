@@ -41,5 +41,3 @@ process = subprocess.Popen(collection_command, shell=True)
 process.wait()
 
 print("收集完成")
-print("报告生成中...")
-print("报告生成完成")

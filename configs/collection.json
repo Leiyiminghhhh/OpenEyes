@@ -1,35 +1,86 @@
 {
-    "collectors": [
+    "crawls": [
         {
-            "class_name":"SimpleCollector",
             "source": "NewYorkTimes",
             "type": "时政",
-            "url": "https://cn.nytimes.com/",
-            "interval": 3
+            "url": "https://cn.nytimes.com/"
         },
         {
-            "class_name":"SimpleCollector",
-            "source": "掘金",
-            "type": "开发",
-            "url": "https://juejin.cn/hot/articles",
-            "interval": 7
+            "source": "东方财富网",
+            "type": "财经",
+            "url": "https://www.eastmoney.com/default.html"
         },
         {
-            "class_name":"SimpleCollector",
-            "source": "雷锋-自动驾驶",
-            "type": "自动驾驶",
-            "url": "https://www.leiphone.com/category/transportation",
-            "interval": 7
+            "source": "福布斯中文",
+            "type": "财经",
+            "url": "https://www.forbeschina.com/"
         },
         {
-            "class_name":"SimpleCollector",
+            "source": "经济观察网",
+            "type": "财经",
+            "url": "https://www.eeo.com.cn/"
+        },
+        {
+            "source": "财富中文",
+            "type": "财经",
+            "url": "https://www.fortunechina.com/"
+        },
+        {
+            "source": "联合早报-国际",
+            "type": "时政",
+            "url": "https://www.zaobao.com.sg/global"
+        },
+        {
             "source": "BBC",
-            "type": "news",
-            "url": "https://www.bbc.com/",
-            "interval": "3"
+            "type": "时政",
+            "url": "https://www.bbc.com/"
+        },
+        {
+            "source": "联合早报-中文",
+            "type": "时政",
+            "url": "https://www.zaobao.com.sg/cn"
+        },
+        {
+            "source": "CNN",
+            "type": "时政",
+            "url": "https://edition.cnn.com/"
+        },
+        {
+            "source": "新浪新闻",
+            "type": "时政",
+            "url": "https://news.sina.com.cn/"
+        },
+        {
+            "source": "量子位-智能车",
+            "type": "智驾",
+            "url": "https://www.qbitai.com/category/auto"
+        },
+        {
+            "source": "量子位-资讯",
+            "type": "科技",
+            "url": "https://www.qbitai.com/category/%e8%b5%84%e8%ae%af"
+        },
+        {
+            "source": "AINews",
+            "type": "AI",
+            "url": "https://www.artificialintelligence-news.com/"
+        },
+        {
+            "source": "Developer Tech",
+            "type": "科技",
+            "url": "https://www.developer-tech.com/"
+        },
+        {
+            "source": "Nvidia News",
+            "type": "科技",
+            "url": "https://www.nvidia.cn/newsroom/news/"
+        },
+        {
+            "source": "雷锋网-智能驾驶",
+            "type": "智驾",
+            "url": "https://www.leiphone.com/category/transportation"
         }
     ],
-    "processors": [],
     "storage": {
         "host": "localhost",
         "port": 3306,
