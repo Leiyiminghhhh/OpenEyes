@@ -6,11 +6,6 @@
             "url": "https://cn.nytimes.com/"
         },
         {
-            "source": "东方财富网",
-            "type": "财经",
-            "url": "https://www.eastmoney.com/default.html"
-        },
-        {
             "source": "福布斯中文",
             "type": "财经",
             "url": "https://www.forbeschina.com/"
@@ -79,6 +74,11 @@
             "source": "雷锋网-智能驾驶",
             "type": "智驾",
             "url": "https://www.leiphone.com/category/transportation"
+        },
+        {
+            "source": "东方财富网",
+            "type": "财经",
+            "url": "https://www.eastmoney.com/default.html"
         }
     ],
     "storage": {

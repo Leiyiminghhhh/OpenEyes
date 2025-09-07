@@ -1,8 +1,11 @@
+import asyncio
 from crawl4ai import LLMExtractionStrategy
-from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, LLMConfig, BrowserConfig, CacheMode
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, LLMConfig, BrowserConfig, CacheMode, DefaultMarkdownGenerator
 from crawl4ai.content_scraping_strategy import LXMLWebScrapingStrategy
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
 from pydantic import BaseModel, Field
+
+DEBUG = False
 
 class RecordCrawlerConfig:
     urls: list
@@ -24,6 +27,7 @@ class RecordCrawler:
         extra_args = {"temperature": 0, "top_p": 0.9, "max_tokens": 10000}
         llm_config = LLMConfig(provider="ollama/qwen3:8b",
                                base_url="http://localhost:11434")
+        markdown_generator = DefaultMarkdownGenerator(content_source="fit_html")
         self.crawler_config = CrawlerRunConfig(
             cache_mode=CacheMode.BYPASS,
             verbose=True,
@@ -46,13 +50,51 @@ class RecordCrawler:
             delay_before_return_html=5,
             mean_delay=0.5,
             max_range=1.5,
+            simulate_user=True,
+            scan_full_page=True,
+            max_scroll_steps=5,
+            only_text=True,
+            word_count_threshold=200,
+            log_console=True,
+            markdown_generator=markdown_generator
         )
         self.browser_config = BrowserConfig(headless=True)
 
-    async def Run(self):
+    async def __get_one_page(self, url):
         async with AsyncWebCrawler(confg=self.browser_config) as crawler:
-            results = await crawler.arun_many(
-                urls=self.config.urls,
+            results = await crawler.arun(
+                url=url,
                 config=self.crawler_config)
-            
-            return {result.url:result.extracted_content for result in results}
+            return results
+
+    def Run(self):
+        results = {}
+        for url in self.config.urls:
+            r = asyncio.run(self.__get_one_page(url))
+            results[url] = r.extracted_content
+            if DEBUG:
+                # save html 
+                html = r.html
+                with open("test.html", "w", encoding="utf-8") as f:
+                    f.write(html)
+                with open("test.md", "w", encoding="utf-8") as f:
+                    f.write(r.markdown)
+                print(f"save html to test.html")
+                print("url: ", url)
+                print(f"result.extracted_content: {r.extracted_content}")
+                print(f"result.redirected_url: {r.redirected_url}")
+                # print(f"result.markdown: {r.markdown}")
+        return results
+
+
+def test():
+    DEBUG = True
+    url = "https://finance.eastmoney.com/a/202509053505213687.html"
+    # url = "https://www.bbc.com/zhongwen/articles/c74098n2xy0o/simp"
+    # url = "https://www.zaobao.com.sg/realtime/china/story20250906-7470442"
+    # url = "https://openai.com/api/pricing/"
+    RecordCrawler(RecordCrawlerConfig([url])).Run()
+
+
+if __name__ == "__main__":
+    test()

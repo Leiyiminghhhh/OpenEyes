@@ -1,9 +1,9 @@
 {
     "crawls": [
         {
-            "source": "Nvidia News",
-            "type": "科技",
-            "url": "https://www.nvidia.cn/newsroom/news/"
+            "source": "东方财富网",
+            "type": "财经",
+            "url": "https://www.eastmoney.com/default.html"
         }
     ],
     "storage": {

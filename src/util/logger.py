@@ -32,8 +32,8 @@ def get_logger(filename='app.log'):
         
         # 创建文件处理器
         log_file_path = os.path.join(log_dir, filename)
-        if os.path.exists(log_file_path):
-            os.remove(log_file_path)
+        # if os.path.exists(log_file_path):
+        #     os.remove(log_file_path)
         file_handler = logging.FileHandler(log_file_path, encoding='utf-8')
         file_handler.setLevel(logging.INFO)
         

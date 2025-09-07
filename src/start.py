@@ -41,3 +41,10 @@ process = subprocess.Popen(collection_command, shell=True)
 process.wait()
 
 print("收集完成")
+
+display_command = """python src\display\main.py -d 1d -m ai -c configs\collection.json"""
+print(f"启动指令：{display_command}")
+process = subprocess.Popen(display_command, shell=True)
+process.wait()
+
+print("展示完成")

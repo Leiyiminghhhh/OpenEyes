@@ -118,7 +118,7 @@ class StoreUtil:
         filtered_records = []
         fail_store_records = []
         for record in records:
-            if self.judge_record_contains(record):
+            if self.judge_url_contains(record.url):
                 fail_store_records.append(record)
             else:
                 filtered_records.append(record)
@@ -157,7 +157,7 @@ class StoreUtil:
             logger.error("数据库未初始化")
             return False
 
-        if self.judge_record_contains(record):
+        if self.judge_url_contains(record.url):
             logger.warn(f"记录已存在： {record}")
             return False
 
@@ -173,8 +173,7 @@ class StoreUtil:
             session.rollback()
             session.close()
             return False
-
-    def judge_record_contains(self, record: Record) -> bool:
+    def judge_url_contains(self, url) -> bool:
         """
         判断记录是否已存在
         :param record: 记录对象
@@ -182,14 +181,50 @@ class StoreUtil:
         """
         try:
             session = self.Session()
-            query = session.query(Record).filter(Record.url == record.url)
+            query = session.query(Record).filter(Record.url == url)
             exists = query.first() is not None
-            if not exists:  # 只有当URL不存在时才检查标题
-                query = session.query(Record).filter(Record.title == record.title)
-                exists = query.first() is not None
             session.close()
             return exists
         except Exception as e:
             logger.error(f"判断记录是否存在失败: {str(e)}")
             return False
-
+    def get_records(self, start_time, end_time, type=None):
+        """
+        获取指定时间段内的新闻记录
+        
+        Args:
+            start_time: 开始时间（不包含）
+            end_time: 结束时间（包含）
+            type: 新闻类型，可以是字符串、列表或集合，如果为None则获取所有类型的新闻
+            
+        Returns:
+            list: 符合条件的新闻记录对象列表
+        """
+        if not self.Session:
+            logger.error("数据库未初始化")
+            return []
+        
+        try:
+            session = self.Session()
+            query = session.query(Record).filter(
+                Record.time > start_time,
+                Record.time <= end_time
+            )
+            
+            # 如果指定了类型，则添加类型筛选条件
+            if type:
+                if isinstance(type, (list, set)):
+                    # 如果type是列表或集合，则查找所有在其中的类型
+                    query = query.filter(Record.type.in_(type))
+                else:
+                    # 如果type是字符串，则精确匹配类型
+                    query = query.filter(Record.type == type)
+            
+            records = query.all()
+            session.close()
+            
+            # 直接返回记录对象列表
+            return records
+        except Exception as e:
+            logger.error(f"获取记录失败: {str(e)}")
+            return []
